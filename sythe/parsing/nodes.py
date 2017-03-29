@@ -2,7 +2,14 @@ import sythe.parsing.errors as errors
 
 class RuleNode:
     def __init__(self, tokens):
-        self.resource = ResourceNode(tokens)
+        try:
+            self.resource = ResourceNode(tokens)
+            if tokens[0] != '(':
+                raise errors.ParsingError(
+                    'Invalid next token. Expected (, got {}'.format(tokens[0])
+                )
+        except IndexError:
+            raise errors.ParsingError('EOF found while parsing')
 
 class ResourceNode:
     def __init__(self, tokens):
