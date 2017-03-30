@@ -2,6 +2,39 @@ import unittest
 import sythe.parsing.nodes as nodes
 import sythe.parsing.errors as errors
 
+class IsolateConditionTests(unittest.TestCase):
+    def test_handles_unstarted(self):
+        test_cases = [
+            ['A'],
+            ['{', 'B', '=', 'C', '}']
+        ]
+
+        for test_case in test_cases:
+            with self.assertRaises(errors.ParsingError):
+                nodes.isolate_condition(test_case)
+
+    def test_handles_unmatched(self):
+        test_cases = [
+            ['('],
+            ['(', 'B', '=', '(', ')'],
+            ['(', 'B', '=', '(', 'A', '>', 'C']
+        ]
+
+        for test_case in test_cases:
+            with self.assertRaises(errors.ParsingError):
+                nodes.isolate_condition(test_case)
+
+    def test_isolates_correctly(self):
+        test_cases = [
+            (['(', 'A', '=', 'B', ')'], 5),
+            (['(', '(', 'A', '=', 'B', ')', '&', 'C', ')'], 9),
+            (['(', 'A', '=', 'B', ')', 'C', 'X'], 5)
+        ]
+
+        for test_case, expected_output in test_cases:
+            output = nodes.isolate_condition(test_case)
+            self.assertEqual(output, expected_output)
+
 class RuleNodeTests(unittest.TestCase):
     """
     Tests for confirming the behaviour of the RuleNode class
@@ -34,6 +67,57 @@ class RuleNodeTests(unittest.TestCase):
                 nodes.RuleNode(test_case)
             except errors.ParsingError:
                 self.fail('Error parsing valid rule')
+
+class ConditionalNodeTests(unittest.TestCase):
+    """
+    Tests for the ConditionNode which is basically the rule engine
+    part of the parser
+    """
+    def test_rejects_invalid_operations(self):
+        """
+        This test makes sure that parsing fails on invalid operations
+        """
+        test_cases = ['m', '[', ',', '/']
+        for test_case in test_cases:
+            condition = ['(', 'A', test_case, 'B', ')']
+            with self.assertRaises(errors.ParsingError):
+                nodes.parse_condition(condition)
+
+    def test_rejects_unclosed_strings(self):
+        """
+        This test makes sure that improperly closed strings
+        are not parsed
+        """
+        test_cases = [
+            '\'asdf',
+            '\"asdf',
+            'asdf\'',
+            'asdf\"',
+            '\'asdf\"',
+            '\"asdf\''
+        ]
+
+        for test_case in test_cases:
+            condition = ['(', test_case, '>', 'B', ')']
+            with self.assertRaises(errors.ParsingError):
+                nodes.parse_condition(condition)
+
+    def test_parses_correctly(self):
+        """
+        This test makes sure that no errors are thrown on valid conditions
+        """
+        test_cases = [
+            ['(', 'A', '=', 'B', ')'],
+            ['(', 'A', '>', 'B', '&', 'AB', '>', 'BA', ')'],
+            ['(', '(', 'A', '>', 'B', '|', 'AB', '>', 'BA', ')', '&', 'ABC', '=', 'CBA', ')']
+        ]
+
+        for test_case in test_cases:
+            test_case_str = ' '.join(test_case)
+            try:
+                nodes.parse_condition(test_case)
+            except errors.ParsingError as err:
+                self.fail('Expected {} to parse correctly. Got: {}'.format(test_case_str, err.message))
 
 class ResourceNodeTests(unittest.TestCase):
     """
