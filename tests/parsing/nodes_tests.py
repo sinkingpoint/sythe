@@ -3,7 +3,15 @@ import sythe.parsing.nodes as nodes
 import sythe.parsing.errors as errors
 
 class IsolateConditionTests(unittest.TestCase):
+    """
+    Tests the isolate_condition function which scans
+    tokens to find the contents of the condition for a rule
+    """
     def test_handles_unstarted(self):
+        """
+        Tests that an error is thrown when
+        the given tokens don't start at a condition
+        """
         test_cases = [
             ['A'],
             ['{', 'B', '=', 'C', '}']
@@ -14,6 +22,10 @@ class IsolateConditionTests(unittest.TestCase):
                 nodes.isolate_condition(test_case)
 
     def test_handles_unmatched(self):
+        """
+        Tests that an error is thrown when we're given
+        unproperly terminated conditions
+        """
         test_cases = [
             ['('],
             ['(', 'B', '=', '(', ')'],
@@ -25,6 +37,9 @@ class IsolateConditionTests(unittest.TestCase):
                 nodes.isolate_condition(test_case)
 
     def test_isolates_correctly(self):
+        """
+        Tests that we can find the correct span of a condition
+        """
         test_cases = [
             (['(', 'A', '=', 'B', ')'], 5),
             (['(', '(', 'A', '=', 'B', ')', '&', 'C', ')'], 9),
