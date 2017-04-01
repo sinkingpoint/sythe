@@ -25,6 +25,9 @@ class AndNode:
         self.left = left
         self.right = right
 
+    def execute(self):
+        return self.left.execute() and self.right.execute()
+
     def __str__(self):
         return '({} & {})'.format(self.left, self.right)
 
@@ -32,6 +35,9 @@ class OrNode:
     def __init__(self, left, right):
         self.left = left
         self.right = right
+
+    def execute(self):
+        return self.left.execute() or self.right.execute()
 
     def __str__(self):
         return '({} | {})'.format(self.left, self.right)
@@ -41,6 +47,9 @@ class EqualsNode:
         self.left = left
         self.right = right
 
+    def execute(self):
+        return self.left.compare(self.right) == 0
+
     def __str__(self):
         return '({} = {})'.format(self.left, self.right)
 
@@ -49,6 +58,9 @@ class GreaterThanNode:
         self.left = left
         self.right = right
 
+    def execute(self):
+        return self.left.compare(self.right) > 0
+
     def __str__(self):
         return '({} > {})'.format(self.left, self.right)
 
@@ -56,6 +68,9 @@ class LessThanNode:
     def __init__(self, left, right):
         self.left = left
         self.right = right
+
+    def execute(self):
+        return self.left.compare(self.right) < 0
 
     def __str__(self):
         return '({} < {})'.format(self.left, self.right)
