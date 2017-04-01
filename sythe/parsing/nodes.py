@@ -9,6 +9,10 @@ class RuleNode:
                 raise errors.ParsingError(
                     'Invalid next token. Expected (, got {}'.format(tokens[0])
                 )
+            condition_length = isolate_condition(tokens)
+            condition_tokens = tokens[:condition_length]
+            tokens = tokens[condition_length:]
+            self.condition = parse_condition(condition_tokens)
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
 
@@ -133,7 +137,7 @@ def parse_operand(operand_token):
         return StringLiteralNode(operand_token)
     elif regex.match(r'^true|false$', operand_token):
         return BooleanLiteralNode(operand_token)
-    elif regex.match(r'^[a-zA-Z0-9_:]+$', operand_token):
+    elif regex.match(r'^[a-zA-Z0-9_:\.]+$', operand_token):
         return VariableNode(operand_token)
     else:
         raise errors.ParsingError('Invalid Operand: {}'.format(operand_token))
