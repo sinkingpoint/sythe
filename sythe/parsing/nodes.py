@@ -13,6 +13,10 @@ class RuleNode:
             condition_tokens = tokens[:condition_length]
             tokens = tokens[condition_length:]
             self.condition = parse_condition(condition_tokens)
+            if tokens[0] != '{':
+                raise errors.ParsingError(
+                    'Invalid next token. Expected {{, got {}'.format(tokens[0])
+                )
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
 
@@ -149,12 +153,24 @@ class IntLiteralNode:
         except:
             raise errors.ParsingError('Invalid int literal: {}'.format(token))
 
+    def compare(self, node):
+        if isinstance(node, IntLiteralNode):
+            return self.value - node.value
+        else:
+            return None
+
     def __str__(self):
         return '{}'.format(self.value)
 
 class StringLiteralNode:
     def __init__(self, token):
         self.value = token[1:-1]
+
+    def compare(self, node):
+        if isinstance(node, StringLiteralNode):
+            pass
+        else:
+            return None
 
     def __str__(self):
         return '"{}"'.format(self.value)
@@ -168,12 +184,36 @@ class BooleanLiteralNode:
         else:
             raise errors.ParsingError('Invalid boolean literal: {}'.format(token))
 
+    def compare(self, node):
+        if isinstance(node, BooleanLiteralNode):
+            if self.value == node.value:
+                return 0
+            else:
+                return -1
+        else:
+            return None
+
     def __str__(self):
         return '{}'.format(self.value)
 
 class VariableNode:
     def __init__(self, variable_name):
         self.variable_name = variable_name
+
+    def get_value_node(self, resource):
+        path = self.variable_name.split('.')
+        value = resource
+        for path_item in path:
+            value = resource[path_item]
+
+        if isinstance(value, str):
+            return StringLiteralNode(value)
+        elif isinstance(value, int):
+            return IntLiteralNode(value)
+        elif isinstance(value, bool):
+            return BooleanLiteralNode(value)
+        else:
+            raise errors.ParsingError('Unknown datatype: {}'.format(type(value)))
 
     def __str__(self):
         return '{}'.format(self.variable_name)
@@ -190,5 +230,3 @@ class ResourceNode:
 
     def get_resource_name(self):
         return self.resource_name
-
-
