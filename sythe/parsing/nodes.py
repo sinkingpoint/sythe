@@ -25,8 +25,8 @@ class AndNode:
         self.left = left
         self.right = right
 
-    def execute(self):
-        return self.left.execute() and self.right.execute()
+    def execute(self, resource):
+        return self.left.execute(resource) and self.right.execute(resource)
 
     def __str__(self):
         return '({} & {})'.format(self.left, self.right)
@@ -36,8 +36,8 @@ class OrNode:
         self.left = left
         self.right = right
 
-    def execute(self):
-        return self.left.execute() or self.right.execute()
+    def execute(self, resource):
+        return self.left.execute(resource) or self.right.execute(resource)
 
     def __str__(self):
         return '({} | {})'.format(self.left, self.right)
@@ -47,8 +47,8 @@ class EqualsNode:
         self.left = left
         self.right = right
 
-    def execute(self):
-        return self.left.compare(self.right) == 0
+    def execute(self, resource):
+        return self.left.execute(resource) == self.right.execute(resource)
 
     def __str__(self):
         return '({} = {})'.format(self.left, self.right)
@@ -58,8 +58,8 @@ class GreaterThanNode:
         self.left = left
         self.right = right
 
-    def execute(self):
-        return self.left.compare(self.right) > 0
+    def execute(self, resource):
+        return self.left.execute(resource) > self.right.execute(resource)
 
     def __str__(self):
         return '({} > {})'.format(self.left, self.right)
@@ -69,8 +69,8 @@ class LessThanNode:
         self.left = left
         self.right = right
 
-    def execute(self):
-        return self.left.compare(self.right) < 0
+    def execute(self, resource):
+        return self.left.execute(resource) < self.right.execute(resource)
 
     def __str__(self):
         return '({} < {})'.format(self.left, self.right)
@@ -168,11 +168,8 @@ class IntLiteralNode:
         except:
             raise errors.ParsingError('Invalid int literal: {}'.format(token))
 
-    def compare(self, node):
-        if isinstance(node, IntLiteralNode):
-            return self.value - node.value
-        else:
-            return None
+    def execute(self, resource):
+        return self.value
 
     def __str__(self):
         return '{}'.format(self.value)
@@ -181,11 +178,8 @@ class StringLiteralNode:
     def __init__(self, token):
         self.value = token[1:-1]
 
-    def compare(self, node):
-        if isinstance(node, StringLiteralNode):
-            pass
-        else:
-            return None
+    def execute(self, resource):
+        return self.value
 
     def __str__(self):
         return '"{}"'.format(self.value)
@@ -201,16 +195,7 @@ class BooleanLiteralNode:
         else:
             raise errors.ParsingError('Invalid boolean literal: {}'.format(token))
 
-    def compare(self, node):
-        if isinstance(node, BooleanLiteralNode):
-            if self.value == node.value:
-                return 0
-            else:
-                return -1
-        else:
-            return None
-
-    def execute(self):
+    def execute(self, resource):
         return self.value
 
     def __str__(self):
@@ -220,7 +205,7 @@ class VariableNode:
     def __init__(self, variable_name):
         self.variable_name = variable_name
 
-    def get_value_node(self, resource):
+    def execute(self, resource):
         path = self.variable_name.split('.')
         value = resource
         for path_item in path:
@@ -231,12 +216,9 @@ class VariableNode:
                     'Unknown attribute path: {} for resource'.format(self.variable_name)
                 )
 
-        if isinstance(value, str):
-            return StringLiteralNode(value)
-        elif isinstance(value, int):
-            return IntLiteralNode(value)
-        elif isinstance(value, bool):
-            return BooleanLiteralNode(value)
+        allowed_types = [str, int, bool]
+        if type(value) in allowed_types:
+            return value
         else:
             raise errors.ParsingError('Unknown datatype: {}'.format(type(value)))
 
