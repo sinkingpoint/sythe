@@ -158,3 +158,62 @@ class ResourceNodeTests(unittest.TestCase):
         for resource in invalid_resources:
             with self.assertRaises(errors.ParsingError):
                 nodes.ResourceNode([resource])
+
+class AndNodeTests(unittest.TestCase):
+    def test_and_ands(self):
+        test_cases = [
+            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(True), True],
+            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(False), False],
+            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(True), False],
+            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(False), False]
+        ]
+
+        for left, right, output in test_cases:
+            self.assertEqual(nodes.AndNode(left, right).execute(), output)
+
+class OrNodeTests(unittest.TestCase):
+    def test_or_ors(self):
+        test_cases = [
+            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(True), True],
+            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(False), True],
+            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(True), True],
+            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(False), False]
+        ]
+
+        for left, right, output in test_cases:
+            self.assertEqual(nodes.OrNode(left, right).execute(), output)
+
+class VariableNodeTests(unittest.TestCase):
+    def test_invalid_paths_throws(self):
+        test_cases = [
+            'some.none.existant.path',
+            'some.broken.path.',
+            'a.something',
+            'a.b'
+        ]
+
+        for path in test_cases:
+            node = nodes.VariableNode(path)
+            resource = {
+                'a': {
+                    'b': {}
+                }
+            }
+            with self.assertRaises(errors.ParsingError):
+                node.get_value_node(resource)
+
+    def test_correct_paths(self):
+        test_cases = [
+            'a',
+            'b.c'
+        ]
+
+        for path in test_cases:
+            node = nodes.VariableNode(path)
+            resource = {
+                'a': 3,
+                'b': {
+                    'c': 4
+                }
+            }
+            node.get_value_node(resource)

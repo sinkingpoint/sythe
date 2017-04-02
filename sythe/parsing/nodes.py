@@ -196,6 +196,8 @@ class BooleanLiteralNode:
             self.value = True
         elif token == 'false':
             self.value = False
+        elif isinstance(token, bool):
+            self.value = token
         else:
             raise errors.ParsingError('Invalid boolean literal: {}'.format(token))
 
@@ -208,6 +210,9 @@ class BooleanLiteralNode:
         else:
             return None
 
+    def execute(self):
+        return self.value
+
     def __str__(self):
         return '{}'.format(self.value)
 
@@ -219,7 +224,12 @@ class VariableNode:
         path = self.variable_name.split('.')
         value = resource
         for path_item in path:
-            value = resource[path_item]
+            try:
+                value = value[path_item]
+            except KeyError:
+                raise errors.ParsingError(
+                    'Unknown attribute path: {} for resource'.format(self.variable_name)
+                )
 
         if isinstance(value, str):
             return StringLiteralNode(value)
