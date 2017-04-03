@@ -11,7 +11,7 @@ class RuleNode:
                 )
             condition_length = isolate_condition(tokens)
             condition_tokens = tokens[:condition_length]
-            tokens = tokens[condition_length:]
+            del tokens[:condition_length]
             self.condition = parse_condition(condition_tokens)
             if tokens[0] != '{':
                 raise errors.ParsingError(
@@ -25,6 +25,9 @@ class RuleNode:
             tokens.pop(0)
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
+
+    def __str__(self):
+        return '{}({}){{}}'.format(self.resource, self.condition)
 
 class AndNode:
     def __init__(self, left, right):
@@ -242,4 +245,7 @@ class ResourceNode:
             raise errors.ParsingError('Invalid resource type: {}'.format(tokens[0]))
 
     def get_resource_name(self):
+        return self.resource_name
+
+    def __str__(self):
         return self.resource_name
