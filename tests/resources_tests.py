@@ -40,8 +40,9 @@ class GetEC2InstancesTests(unittest.TestCase):
         ]
 
         for instance_page in test_cases:
-            instances = resources.get_ec2_instances(MockEC2Client([instance_page]))
-            self.assertEqual(instance_page, instances)
+            instances = resources.get_ec2_instances(MockEC2Client(instance_page))
+            expected_output = [resources.EC2Instance(item) for sublist in instance_page for item in sublist]
+            self.assertEqual(expected_output, instances)
 
     def test_get_with_pages(self):
         """
@@ -57,7 +58,8 @@ class GetEC2InstancesTests(unittest.TestCase):
 
         for instance_page in test_cases:
             instances = resources.get_ec2_instances(MockEC2Client(instance_page))
-            self.assertEqual([item for sublist in instance_page for item in sublist], instances)
+            expected_output = [resources.EC2Instance(item) for sublist in instance_page for item in sublist]
+            self.assertEqual(expected_output, instances)
 
 class ConditionNodeTests(unittest.TestCase):
     def test_conditions_filter_correctly(self):
