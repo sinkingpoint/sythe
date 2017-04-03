@@ -1,28 +1,23 @@
 import sythe.parsing.errors as errors
 import regex
 
+def expect(token, tokens):
+    if tokens[0] != token:
+        raise errors.ParsingError(
+            'Invalid next token. Expected {}, got {}'.format(token, tokens[0])
+        )
+    tokens.pop(0)
+
 class RuleNode:
     def __init__(self, tokens):
         try:
             self.resource = ResourceNode(tokens)
-            if tokens[0] != '(':
-                raise errors.ParsingError(
-                    'Invalid next token. Expected (, got {}'.format(tokens[0])
-                )
             condition_length = isolate_condition(tokens)
             condition_tokens = tokens[:condition_length]
             del tokens[:condition_length]
             self.condition = parse_condition(condition_tokens)
-            if tokens[0] != '{':
-                raise errors.ParsingError(
-                    'Invalid next token. Expected {{, got {}'.format(tokens[0])
-                )
-            tokens.pop(0)
-            if tokens[0] != '}':
-                raise errors.ParsingError(
-                    'Invalid next token. Expected }}, got {}'.format(tokens[0])
-                )
-            tokens.pop(0)
+            expect('{', tokens)
+            expect('}', tokens)
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
 
