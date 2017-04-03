@@ -4,6 +4,7 @@ representations and internal AST representations
 """
 
 import sythe.parsing.tokenizer as tokenizer
+import sythe.parsing as parsing
 
 def parse_rules_from_file(file_path):
     """
@@ -14,4 +15,4 @@ def parse_rules_from_file(file_path):
     with open(file_path, 'r') as rule_file:
         raw_file_contents = rule_file.read()
 
-    return []
+    return parsing.parse_rules_from_string(raw_file_contents)
