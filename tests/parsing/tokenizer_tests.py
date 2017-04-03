@@ -11,6 +11,9 @@ class TokenizerTests(unittest.TestCase):
             #Test Empty strings don't have any tokens
             ('', []),
 
+            #Test Strings are kept together
+            ('"A Multiword String"', ['"A Multiword String"']),
+
             #Check identifiers work
             ('ec2_instance', ['ec2_instance']),
 
