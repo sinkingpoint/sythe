@@ -169,7 +169,7 @@ class AndNodeTests(unittest.TestCase):
         ]
 
         for left, right, output in test_cases:
-            self.assertEqual(nodes.AndNode(left, right).execute(), output)
+            self.assertEqual(nodes.AndNode(left, right).execute(None), output)
 
 class OrNodeTests(unittest.TestCase):
     def test_or_ors(self):
@@ -181,7 +181,7 @@ class OrNodeTests(unittest.TestCase):
         ]
 
         for left, right, output in test_cases:
-            self.assertEqual(nodes.OrNode(left, right).execute(), output)
+            self.assertEqual(nodes.OrNode(left, right).execute(None), output)
 
 class VariableNodeTests(unittest.TestCase):
     def test_invalid_paths_throws(self):
@@ -200,7 +200,7 @@ class VariableNodeTests(unittest.TestCase):
                 }
             }
             with self.assertRaises(errors.ParsingError):
-                node.get_value_node(resource)
+                node.execute(resource)
 
     def test_correct_paths(self):
         test_cases = [
@@ -216,4 +216,4 @@ class VariableNodeTests(unittest.TestCase):
                     'c': 4
                 }
             }
-            node.get_value_node(resource)
+            node.execute(resource)
