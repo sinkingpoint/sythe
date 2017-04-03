@@ -3,7 +3,6 @@ This module provides IO operations for moving rules between text
 representations and internal AST representations
 """
 
-import sythe.parsing.tokenizer as tokenizer
 import sythe.parsing.strings as strings
 
 def parse_rules_from_file(file_path):
