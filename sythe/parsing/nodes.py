@@ -205,6 +205,13 @@ class BooleanLiteralNode:
     def __str__(self):
         return '{}'.format(self.value)
 
+class NoneNode:
+    def execute(self, resource):
+        return None
+
+    def __str__(self):
+        return 'None'
+
 class VariableNode:
     def __init__(self, variable_name):
         self.variable_name = variable_name
@@ -216,11 +223,10 @@ class VariableNode:
             try:
                 value = value[path_item]
             except KeyError:
-                raise errors.ParsingError(
-                    'Unknown attribute path: {} for resource'.format(self.variable_name)
-                )
+                value = None
+                break
 
-        allowed_types = [str, int, bool]
+        allowed_types = [str, int, bool, type(None)]
         if type(value) in allowed_types:
             return value
         else:

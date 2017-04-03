@@ -184,12 +184,11 @@ class OrNodeTests(unittest.TestCase):
             self.assertEqual(nodes.OrNode(left, right).execute(None), output)
 
 class VariableNodeTests(unittest.TestCase):
-    def test_invalid_paths_throws(self):
+    def test_invalid_paths_returns_none(self):
         test_cases = [
             'some.none.existant.path',
             'some.broken.path.',
-            'a.something',
-            'a.b'
+            'a.something'
         ]
 
         for path in test_cases:
@@ -199,8 +198,7 @@ class VariableNodeTests(unittest.TestCase):
                     'b': {}
                 }
             }
-            with self.assertRaises(errors.ParsingError):
-                node.execute(resource)
+            self.assertEqual(None, node.execute(resource))
 
     def test_correct_paths(self):
         test_cases = [
