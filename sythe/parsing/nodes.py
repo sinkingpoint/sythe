@@ -17,6 +17,12 @@ class RuleNode:
                 raise errors.ParsingError(
                     'Invalid next token. Expected {{, got {}'.format(tokens[0])
                 )
+            tokens.pop(0)
+            if tokens[0] != '}':
+                raise errors.ParsingError(
+                    'Invalid next token. Expected }}, got {}'.format(tokens[0])
+                )
+            tokens.pop(0)
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
 
