@@ -1,5 +1,7 @@
 import sythe.aws
 import sythe.errors as errors
+import parsedatetime
+from datetime import datetime
 
 def resource_action(required_args):
     def enforce_args(func):
@@ -30,6 +32,17 @@ class Resource:
 
     def __repr__(self):
         return repr(self.data)
+
+    @resource_action(['after'])
+    def mark_for_deletion(self, args):
+        cal = parsedatetime.Calendar()
+        time_struct, parse_status = cal.parse(args['after'])
+        if parse_status == 0:
+            raise errors.InvalidArgumentError(
+                'Invalid timespan: {}'.format(args['after'])
+            )
+        time = datetime(*time_struct[:6])
+        self.tag({'key': 'SytheDeletionTime', 'value': str(time.timestamp())})
 
 class EC2Instance(Resource):
     def __init__(self, data):
