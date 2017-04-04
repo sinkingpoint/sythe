@@ -57,7 +57,10 @@ class ActionNode:
             raise errors.ParsingError(
                 'Invalid action \'{}\' on resource'.format(self.action_name)
             )
-        method(self.arguments)
+        resolved_arguments = {}
+        for arg_name, arg_node in self.arguments.items():
+            resolved_arguments[arg_name] = arg_node.execute(resource)
+        method(resolved_arguments)
 
     def __str__(self):
         arguments_str = ['{}: {}'.format(arg_name, arg_value) for arg_name, arg_value in self.arguments.items()]
