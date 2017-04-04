@@ -37,7 +37,7 @@ class ActionNode:
     def __init__(self, tokens):
         self.action_name = tokens.pop(0)
         expect('(', tokens)
-        self.arguments = []
+        self.arguments = {}
         while tokens[0] != ')':
             if not regex.match(r'^[a-zA-Z0-9]+:$', tokens[0]):
                 raise errors.ParsingError(
@@ -45,7 +45,7 @@ class ActionNode:
                 )
             argument_name = tokens.pop(0)[:-1]
             argument_value = parse_operand(tokens.pop(0))
-            self.arguments.append((argument_name, argument_value))
+            self.arguments[argument_name] = argument_value
             if tokens[0] != ')':
                 expect(',', tokens)
 
@@ -60,7 +60,7 @@ class ActionNode:
         method(self.arguments)
 
     def __str__(self):
-        arguments_str = ['{}: {}'.format(arg_name, arg_value) for arg_name, arg_value in self.arguments]
+        arguments_str = ['{}: {}'.format(arg_name, arg_value) for arg_name, arg_value in self.arguments.items()]
         return '{}({})'.format(self.action_name, ', '.join(arguments_str))
 
 class AndNode:
