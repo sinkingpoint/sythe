@@ -2,13 +2,33 @@ import sythe.parsing.errors as errors
 import regex
 
 def expect(token, tokens):
+    """
+    Raises a Parsing error if the given token is not the first
+    token in the given tokens queue. Otherwise, pops it from the
+    tokens array
+    """
     if tokens[0] != token:
         raise errors.ParsingError(
             'Invalid next token. Expected {}, got {}'.format(token, tokens[0])
         )
     tokens.pop(0)
 
-class RuleNode:
+class Node(object):
+    """
+    The top most node object. Basically just defines
+    the interface of an AST Node
+    """
+    def execute(self, resource):
+        """
+        Executes the action this AST Node defines on the given resource
+        """
+        raise NotImplementedError()
+
+class RuleNode(Node):
+    """
+    A node that defines a rule, basically a coupling of a resource type,
+    a condition and a set of actions to apply to matching resources
+    """
     def __init__(self, tokens):
         try:
             self.resource = ResourceNode(tokens)
@@ -33,7 +53,11 @@ class RuleNode:
         actions_str = ['\n\t{}'.format(str(action)) for action in self.actions]
         return '{}({}){{{}\n}}'.format(self.resource, self.condition, ''.join(actions_str))
 
-class ActionNode:
+class ActionNode(Node):
+    """
+    A node that defines an action to be performed on a given
+    resource. Executing this node performs that action
+    """
     def __init__(self, tokens):
         self.action_name = tokens.pop(0)
         expect('(', tokens)
@@ -53,7 +77,7 @@ class ActionNode:
 
     def execute(self, resource):
         method = getattr(resource, self.action_name)
-        if method == None:
+        if method is None:
             raise errors.ParsingError(
                 'Invalid action \'{}\' on resource'.format(self.action_name)
             )
@@ -63,10 +87,15 @@ class ActionNode:
         method(resolved_arguments)
 
     def __str__(self):
-        arguments_str = ['{}: {}'.format(arg_name, arg_value) for arg_name, arg_value in self.arguments.items()]
+        arguments_str = ['{}: {}'.format(arg_name, arg_value)
+                         for arg_name, arg_value in self.arguments.items()]
         return '{}({})'.format(self.action_name, ', '.join(arguments_str))
 
-class AndNode:
+class AndNode(Node):
+    """
+    A node that forms a conjunction in a condition. Takes
+    two condition components and returns True if both are True
+    """
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -77,7 +106,11 @@ class AndNode:
     def __str__(self):
         return '({} & {})'.format(self.left, self.right)
 
-class OrNode:
+class OrNode(Node):
+    """
+    A node that forms a disjunction in a condition. Takes
+    two condition components and returns True if either are True
+    """
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -88,7 +121,11 @@ class OrNode:
     def __str__(self):
         return '({} | {})'.format(self.left, self.right)
 
-class EqualsNode:
+class EqualsNode(Node):
+    """
+    A comparison node that takes two terminal nodes and
+    returns True if they are equal
+    """
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -99,7 +136,11 @@ class EqualsNode:
     def __str__(self):
         return '({} = {})'.format(self.left, self.right)
 
-class GreaterThanNode:
+class GreaterThanNode(Node):
+    """
+    A comparison node that takes two terminal nodes and
+    returns True if the first is greater than the second
+    """
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -110,7 +151,11 @@ class GreaterThanNode:
     def __str__(self):
         return '({} > {})'.format(self.left, self.right)
 
-class LessThanNode:
+class LessThanNode(Node):
+    """
+    A comparison node that takes two terminal nodes and
+    returns True if the first is less than the second
+    """
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -122,16 +167,22 @@ class LessThanNode:
         return '({} < {})'.format(self.left, self.right)
 
 def isolate_condition(tokens):
+    """
+    Takes a given array of tokens that starts with a condition, and returns
+    the length of that condition, i.e. the number of tokens to the matching
+    closing parenthesis. Raises a Parsing error if the tokens array doesn't
+    start with a condition
+    """
     if tokens[0] != '(':
         raise errors.ParsingError('Invalid start to condition: {}'.format(tokens[0]))
 
     open_brackets = 0
     i = 0
     end = -1
-    for i in range(len(tokens)):
-        if tokens[i] == '(':
+    for i, token in enumerate(tokens):
+        if token == '(':
             open_brackets += 1
-        elif tokens[i] == ')':
+        elif token == ')':
             open_brackets -= 1
 
         if open_brackets == 0:
@@ -144,6 +195,10 @@ def isolate_condition(tokens):
     return end
 
 def parse_condition(tokens):
+    """
+    Parses a condition node out of the given tokens array, raising
+    a ParsingError if the tokens array starts with an invalid condition
+    """
     condition = tokens[:isolate_condition(tokens)]
     operators = {
         '&': (12, 'left', AndNode),
@@ -196,6 +251,11 @@ def parse_condition(tokens):
     return ast[0]
 
 def parse_operand(operand_token):
+    """
+    Parses a terminal node out of a given token,
+    raising a ParsingError if we don't understand
+    it
+    """
     if regex.match(r'^[0-9]+$', operand_token):
         return IntLiteralNode(operand_token)
     elif regex.match(r'^(".*")|(\'.*\')$', operand_token):
@@ -207,7 +267,11 @@ def parse_operand(operand_token):
     else:
         raise errors.ParsingError('Invalid Operand: {}'.format(operand_token))
 
-class IntLiteralNode:
+class IntLiteralNode(Node):
+    """
+    Represents an integer in a Rule which can be compared
+    etc with other values
+    """
     def __init__(self, token):
         try:
             self.value = int(token)
@@ -220,7 +284,11 @@ class IntLiteralNode:
     def __str__(self):
         return '{}'.format(self.value)
 
-class StringLiteralNode:
+class StringLiteralNode(Node):
+    """
+    Represents an string in a Rule which can be compared
+    etc with other values
+    """
     def __init__(self, token):
         self.value = token[1:-1]
 
@@ -230,7 +298,11 @@ class StringLiteralNode:
     def __str__(self):
         return '"{}"'.format(self.value)
 
-class BooleanLiteralNode:
+class BooleanLiteralNode(Node):
+    """
+    Represents an boolean in a Rule which can be compared
+    etc with other values
+    """
     def __init__(self, token):
         if token == 'true':
             self.value = True
@@ -247,14 +319,23 @@ class BooleanLiteralNode:
     def __str__(self):
         return '{}'.format(self.value)
 
-class NoneNode:
+class NoneNode(Node):
+    """
+    Represents a None value in a Rule which can be compared
+    etc with other values
+    """
     def execute(self, resource):
         return None
 
     def __str__(self):
         return 'None'
 
-class VariableNode:
+class VariableNode(Node):
+    """
+    Represents an variable in a Rule which can be compared
+    etc with other values. Variables are used to represent
+    values in a resource
+    """
     def __init__(self, variable_name):
         self.variable_name = variable_name
 
@@ -277,7 +358,11 @@ class VariableNode:
     def __str__(self):
         return '{}'.format(self.variable_name)
 
-class ResourceNode:
+class ResourceNode(Node):
+    """
+    Defines a node which determines the type of resource
+    that a rule operates over
+    """
     def __init__(self, tokens):
         valid_resource_types = ['ec2_instance']
         resource = tokens[0]
@@ -287,8 +372,8 @@ class ResourceNode:
         else:
             raise errors.ParsingError('Invalid resource type: {}'.format(tokens[0]))
 
-    def get_resource_name(self):
-        return self.resource_name
+    def execute(self, resource):
+        raise NotImplementedError()
 
     def __str__(self):
         return self.resource_name
