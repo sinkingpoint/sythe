@@ -40,10 +40,9 @@ class TokenizerTests(unittest.TestCase):
              ['ec2_instance', '(', 'state', '=', '"up"', '|',
               'tag:stack.state', '=', '"superceded"', ')', '{', '}']),
 
-            ('ec2_instance(state="up"|tag:stack.state="superceded"){add_tag "a", "b"}',
-             ['ec2_instance', '(', 'state', '=', '"up"', '|',
-              'tag:stack.state', '=', '"superceded"', ')', '{', 'add_tag',
-              '"a"', ',', '"b"', '}'])
+            ('ec2_instance(state="up") {mark_for_deletion(after: "3 days, 2 seconds")}',
+             ['ec2_instance', '(', 'state', '=', '"up"', ')', '{', 'mark_for_deletion', '(',
+              'after:', '"3 days, 2 seconds"', ')', '}'])
         ]
 
         for test_input, output in test_cases:
