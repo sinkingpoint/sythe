@@ -1,6 +1,18 @@
 import sythe.aws
 import sythe.errors as errors
 
+def resource_action(required_args):
+    def enforce_args(func):
+        def wrapper(*args, **kwargs):
+            for arg in required_args:
+                if not arg in args[1]:
+                    raise errors.MissingArgumentError(
+                        'Missing argument in {} call: {}'.format(func.__name__, arg)
+                    )
+            func(*args, **kwargs)
+        return wrapper
+    return enforce_args
+
 class Resource:
     def __init__(self, data):
         self.data = data
@@ -26,11 +38,8 @@ class EC2Instance(Resource):
                 data['tag:{}'.format(tag['Key'])] = tag['Value']
         Resource.__init__(self, data)
 
+    @resource_action(['key', 'value'])
     def tag(self, args):
-        required_args = ['key', 'value']
-        for arg in required_args:
-            if not arg in args:
-                raise errors.MissingArgumentError('Missing argument in tag call: {}'.format(arg))
         ec2_client = sythe.aws.get_ec2_client()
         ec2_client.create_tags(
             Resources=[self.data['InstanceId']],
