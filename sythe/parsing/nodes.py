@@ -17,12 +17,51 @@ class RuleNode:
             del tokens[:condition_length]
             self.condition = parse_condition(condition_tokens)
             expect('{', tokens)
+            self.actions = []
+            while tokens[0] != '}':
+                self.actions.append(ActionNode(tokens))
             expect('}', tokens)
         except IndexError:
             raise errors.ParsingError('EOF found while parsing')
 
+    def execute(self, resource):
+        if self.condition.execute(resource):
+            for action in self.actions:
+                action.execute(resource)
+
     def __str__(self):
-        return '{}({}){{}}'.format(self.resource, self.condition)
+        actions_str = ['\n\t{}'.format(str(action)) for action in self.actions]
+        return '{}({}){{{}\n}}'.format(self.resource, self.condition, ''.join(actions_str))
+
+class ActionNode:
+    def __init__(self, tokens):
+        self.action_name = tokens.pop(0)
+        expect('(', tokens)
+        self.arguments = []
+        while tokens[0] != ')':
+            if not regex.match(r'^[a-zA-Z0-9]+:$', tokens[0]):
+                raise errors.ParsingError(
+                    'Invalid action parameter {}'.format(tokens[0])
+                )
+            argument_name = tokens.pop(0)[:-1]
+            argument_value = parse_operand(tokens.pop(0))
+            self.arguments.append((argument_name, argument_value))
+            if tokens[0] != ')':
+                expect(',', tokens)
+
+        expect(')', tokens)
+
+    def execute(self, resource):
+        method = getattr(resource, self.action_name)
+        if method == None:
+            raise errors.ParsingError(
+                'Invalid action \'{}\' on resource'.format(self.action_name)
+            )
+        method(self.arguments)
+
+    def __str__(self):
+        arguments_str = ['{}: {}'.format(arg_name, arg_value) for arg_name, arg_value in self.arguments]
+        return '{}({})'.format(self.action_name, ', '.join(arguments_str))
 
 class AndNode:
     def __init__(self, left, right):

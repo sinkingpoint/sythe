@@ -74,14 +74,21 @@ class RuleNodeTests(unittest.TestCase):
         Tests that parsing doesn't throw when given correct rules
         """
         test_cases = [
-            ['ec2_instance', '(', 'tag:stack.state', '=', '"live"', ')', '{', '}']
+            ['ec2_instance', '(', 'tag:stack.state', '=', '"live"', ')', '{', '}'],
+            ['ec2_instance', '(', 'tag:stack.state', '=', '"live"', ')', '{',
+             'mark_for_deletion', '(', 'after:', '"3 days"', ')',
+             '}'],
+            ['ec2_instance', '(', 'tag:stack.state', '=', '"live"', ')', '{',
+             'email', '(', 'to:', 'tag:owner', ',', 'from:', "someone", ')',
+             '}']
         ]
 
         for test_case in test_cases:
+            test_case_str = ' '.join(test_case)
             try:
                 nodes.RuleNode(test_case)
             except errors.ParsingError:
-                self.fail('Error parsing valid rule')
+                self.fail('Error parsing valid rule: {}'.format(test_case_str))
 
 class ConditionalNodeTests(unittest.TestCase):
     """
