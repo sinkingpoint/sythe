@@ -5,7 +5,11 @@ python:
 
 install:
   - pip install -r requirements.txt
+  - pip install coveralls
 
 script:
-  - python -m unittest discover -v -s "." -p "*test*.py"
+  - coverage run --source=sythe -m unittest discover -v -s "." -p "*test*.py"
   - pylint --rcfile pylint.rc sythe
+
+after_success:
+  - coveralls
