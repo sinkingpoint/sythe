@@ -349,8 +349,8 @@ class VariableNode(Node):
                 value = None
                 break
 
-        allowed_types = [str, int, bool, type(None)]
-        if type(value) in allowed_types:
+        allowed_types = (str, int, bool, type(None))
+        if isinstance(value, allowed_types):
             return value
         else:
             raise errors.ParsingError('Unknown datatype: {}'.format(type(value)))
