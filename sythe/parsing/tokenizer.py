@@ -14,7 +14,10 @@ def tokenize_string(string):
         A list of tokens from the string
     """
     #This regex splits on borders between tokens
-    border_regex = r'\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)|(?=[()\[\]{};=&\|,])(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)|(?<=[()\[\]{};=&\|,])(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)'
+    split_anchors = [r'\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)',
+                     r'(?=[()\[\]{};=&\|,])(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)',
+                     r'(?<=[()\[\]{};=&\|,])(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)']
+    border_regex = '|'.join(split_anchors)
     tokens = regex.split(border_regex, string, flags=regex.VERSION1)
 
     #Remove empty tokens
