@@ -59,20 +59,37 @@ class Resource(object):
         """
         raise NotImplementedError()
 
+    def delete(self, args):
+        """
+        Deletes this resource
+        """
+        raise NotImplementedError()
+
     @resource_action(['after'])
     def mark_for_deletion(self, args):
         """
         Marks this resource for deletion after a given period of time.
         If resources continue to match the rule, they are deleted after a time
         """
-        cal = parsedatetime.Calendar()
-        time_struct, parse_status = cal.parse(args['after'])
-        if parse_status == 0:
-            raise errors.InvalidArgumentError(
-                'Invalid timespan: {}'.format(args['after'])
-            )
-        time = datetime(*time_struct[:6])
-        self.tag({'key': 'SytheDeletionTime', 'value': str(time.timestamp())})
+        if not 'tag:SytheDeletionTime' in self.data:
+            cal = parsedatetime.Calendar()
+            time_struct, parse_status = cal.parse(args['after'])
+            if parse_status == 0:
+                raise errors.InvalidArgumentError(
+                    'Invalid timespan: {}'.format(args['after'])
+                )
+            time = datetime(*time_struct[:6])
+            self.tag({'key': 'SytheDeletionTime', 'value': str(time.timestamp())})
+            self.data['tag:SytheDeletionTime'] = str(time.timestamp())
+            self.data['Tags'].append({
+                'Key': 'SytheDeletionTime',
+                'Value': str(time.timestamp())
+            })
+        now = datetime.now().timestamp()
+        deletion_time = float(self.data['tag:SytheDeletionTime'])
+
+        if now >= deletion_time:
+            self.delete(args)
 
 class EC2Instance(Resource):
     """
@@ -91,6 +108,11 @@ class EC2Instance(Resource):
             Resources=[self.data['InstanceId']],
             Tags=[{'Key': args['key'], 'Value': args['value']}]
         )
+
+    @resource_action([])
+    def delete(self, args):
+        ec2_client = sythe.aws.get_ec2_client()
+        ec2_client.terminate_instances(InstanceIds=[self.data['InstanceId']])
 
 def get_ec2_instances(ec2_client=sythe.aws.get_ec2_client()):
     """
