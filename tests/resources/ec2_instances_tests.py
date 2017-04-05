@@ -1,6 +1,6 @@
 import unittest
-import sythe.resources as resources
-import sythe.parsing.nodes as nodes
+import sythe.resources.ec2_resources as ec2_resources
+import sythe.resources.core as resources
 
 class MockEC2Client:
     """
@@ -40,8 +40,8 @@ class GetEC2InstancesTests(unittest.TestCase):
         ]
 
         for instance_page in test_cases:
-            instances = resources.get_ec2_instances(MockEC2Client([instance_page]))
-            expected_output = [resources.EC2Instance(item) for sublist in [instance_page] for item in sublist]
+            instances = ec2_resources.get_ec2_instances(MockEC2Client([instance_page]))
+            expected_output = [ec2_resources.EC2Instance(item) for sublist in [instance_page] for item in sublist]
             self.assertEqual(expected_output, instances)
 
     def test_get_with_pages(self):
@@ -57,8 +57,8 @@ class GetEC2InstancesTests(unittest.TestCase):
         ]
 
         for instance_page in test_cases:
-            instances = resources.get_ec2_instances(MockEC2Client(instance_page))
-            expected_output = [resources.EC2Instance(item) for sublist in instance_page for item in sublist]
+            instances = ec2_resources.get_ec2_instances(MockEC2Client(instance_page))
+            expected_output = [ec2_resources.EC2Instance(item) for sublist in instance_page for item in sublist]
             self.assertEqual(expected_output, instances)
 
 class EC2InstanceTests(unittest.TestCase):
@@ -87,44 +87,6 @@ class EC2InstanceTests(unittest.TestCase):
         ]
 
         for test_case in test_cases:
-            instance = resources.EC2Instance(test_case)
+            instance = ec2_resources.EC2Instance(test_case)
             for tag in test_case['Tags']:
                 self.assertEqual(instance['tag:{}'.format(tag['Key'])], tag['Value'])
-
-class ConditionNodeTests(unittest.TestCase):
-    def test_conditions_filter_correctly(self):
-        test_resources = [
-            {
-                'State': {
-                    'Name': 'running'
-                },
-                'tag:Name': 'A Server',
-                'Tags':[
-                    {
-                        'Key': 'Name',
-                        'Value': 'A Server'
-                    }
-                ]
-            },
-            {
-                'State': {
-                    'Name': 'running'
-                },
-                'VpcId': 'vpc-a15f16c4',
-                'tag:Name': 'Another Server',
-                'Tags':[
-                    {
-                        'Key': 'Name',
-                        'Value': 'Another Server'
-                    }
-                ]
-            }
-        ]
-
-        test_cases = [
-            (nodes.EqualsNode(nodes.VariableNode('tag:Name'), nodes.StringLiteralNode('"A Server"')), [test_resources[0]]),
-            (nodes.EqualsNode(nodes.VariableNode('State.Name'), nodes.StringLiteralNode('"running"')), [test_resources[0], test_resources[1]])
-        ]
-
-        for condition, expected in test_cases:
-            self.assertEqual(resources.filter_resources(test_resources, condition), expected)

@@ -1,6 +1,6 @@
 import argparse
 import sythe.fileio as fileio
-import sythe.resources
+from sythe.resources.ec2_resources import get_ec2_instances
 
 def main():
     parser = argparse.ArgumentParser(description='A rule engine for resources')
@@ -9,7 +9,7 @@ def main():
 
     config_file_path = args.config
     rules = fileio.parse_rules_from_file(config_file_path)
-    resources = sythe.resources.get_ec2_instances()
+    resources = get_ec2_instances()
     for rule in rules:
         print("Applying rule: {}".format(rule))
         for resource in resources:

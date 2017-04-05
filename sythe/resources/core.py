@@ -1,13 +1,9 @@
-"""
-This module defines resources which can be used in sythe.
-Resources are objects that contain metadata and define a number of actions
-that can be defined across that resource
-"""
-
 from datetime import datetime
 import parsedatetime
-import sythe.aws
 import sythe.errors as errors
+
+def filter_resources(resources, condition):
+    return [resource for resource in resources if condition.execute(resource)]
 
 def resource_action(required_args):
     """
@@ -29,6 +25,7 @@ def resource_action(required_args):
             func(*args, **kwargs)
         return wrapper
     return enforce_args
+
 
 class Resource(object):
     """
@@ -90,46 +87,3 @@ class Resource(object):
 
         if now >= deletion_time:
             self.delete(args)
-
-class EC2Instance(Resource):
-    """
-    A resource for an instance in EC2.
-    """
-    def __init__(self, data):
-        if 'Tags' in data:
-            for tag in data['Tags']:
-                data['tag:{}'.format(tag['Key'])] = tag['Value']
-        Resource.__init__(self, data)
-
-    @resource_action(['key', 'value'])
-    def tag(self, args):
-        ec2_client = sythe.aws.get_ec2_client()
-        ec2_client.create_tags(
-            Resources=[self.data['InstanceId']],
-            Tags=[{'Key': args['key'], 'Value': args['value']}]
-        )
-
-    @resource_action([])
-    def delete(self, args):
-        ec2_client = sythe.aws.get_ec2_client()
-        ec2_client.terminate_instances(InstanceIds=[self.data['InstanceId']])
-
-def get_ec2_instances(ec2_client=sythe.aws.get_ec2_client()):
-    """
-    Gets all the EC2 instances using the configuration from a given
-    ec2 client. Handles pagination basically.
-    """
-    instances = []
-    instance_page = ec2_client.describe_instances()
-    instance_from_page = [instance for reservation in instance_page['Reservations']
-                          for instance in reservation['Instances']]
-    instances = instances + instance_from_page
-    while 'NextToken' in instance_page and instance_page['NextToken']:
-        instance_page = ec2_client.describe_instances(NextToken=instance_page['NextToken'])
-        instance_from_page = [instance for reservation in instance_page['Reservations']
-                              for instance in reservation['Instances']]
-        instances = instances + instance_from_page
-    return [EC2Instance(instance) for instance in instances]
-
-def filter_resources(resources, condition):
-    return [resource for resource in resources if condition.execute(resource)]
