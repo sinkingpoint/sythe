@@ -154,7 +154,7 @@ class ResourceNodeTests(unittest.TestCase):
         valid_resources = ['ec2_instance']
         for resource in valid_resources:
             node = nodes.ResourceNode([resource])
-            self.assertEqual(node.get_resource_name(), resource)
+            self.assertEqual(node.resource_name, resource)
 
     def test_rejects_invalid_resources(self):
         """

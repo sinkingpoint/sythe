@@ -108,3 +108,6 @@ def get_ec2_instances(ec2_client=sythe.aws.get_ec2_client()):
                               for instance in reservation['Instances']]
         instances = instances + instance_from_page
     return [EC2Instance(instance) for instance in instances]
+
+def filter_resources(resources, condition):
+    return [resource for resource in resources if condition.execute(resource)]
