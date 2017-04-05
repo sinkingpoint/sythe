@@ -61,6 +61,36 @@ class GetEC2InstancesTests(unittest.TestCase):
             expected_output = [resources.EC2Instance(item) for sublist in instance_page for item in sublist]
             self.assertEqual(expected_output, instances)
 
+class EC2InstanceTests(unittest.TestCase):
+    def test_augments_correctly(self):
+        test_cases = [
+            {
+                'Tags': [
+                    {
+                        'Key': 'Test',
+                        'Value': 'Test'
+                    }
+                ]
+            },
+            {
+                'Tags': [
+                    {
+                        'Key': 'Test2',
+                        'Value': 'Test2'
+                    },
+                    {
+                        'Key': 'Test3',
+                        'Value': 'Test3'
+                    }
+                ]
+            }
+        ]
+
+        for test_case in test_cases:
+            instance = resources.EC2Instance(test_case)
+            for tag in test_case['Tags']:
+                self.assertEqual(instance['tag:{}'.format(tag['Key'])], tag['Value'])
+
 class ConditionNodeTests(unittest.TestCase):
     def test_conditions_filter_correctly(self):
         test_resources = [
