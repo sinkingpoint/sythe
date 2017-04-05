@@ -1,5 +1,9 @@
 # Sythe
 
+[![Build Status](https://travis-ci.org/sinkingpoint/sythe.svg?branch=master)](https://travis-ci.org/sinkingpoint/sythe)
+
+[![Coverage Status](https://coveralls.io/repos/github/sinkingpoint/sythe/badge.svg?branch=master)](https://coveralls.io/github/sinkingpoint/sythe?branch=master)
+
 Sythe is a rules engine for AWS resources, not unlike [Janitor Monkey](https://github.com/Netflix/SimianArmy/) by
 Netflix, or [Cloud Custodian](https://github.com/capitalone/cloud-custodian) by Capital One.
 
