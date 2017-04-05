@@ -35,7 +35,7 @@ class RuleNode(Node):
             condition_length = isolate_condition(tokens)
             condition_tokens = tokens[:condition_length]
             del tokens[:condition_length]
-            self.condition = parse_condition(condition_tokens)
+            self.condition = parse_condition_to_ast(condition_tokens)
             expect('{', tokens)
             self.actions = []
             while tokens[0] != '}':
@@ -194,19 +194,28 @@ def isolate_condition(tokens):
 
     return end
 
-def parse_condition(tokens):
+def get_operators():
     """
-    Parses a condition node out of the given tokens array, raising
-    a ParsingError if the tokens array starts with an invalid condition
+    Returns a dict of operators from token -> operator,
+    where operator = (precedence, associativity, ASTNode)
+    TODO: Move this into a registration system to make adding
+    new operators easier
     """
-    condition = tokens[:isolate_condition(tokens)]
-    operators = {
+    return {
         '&': (12, 'left', AndNode),
         '|': (13, 'left', OrNode),
         '=': (8, 'left', EqualsNode),
         '>': (7, 'left', GreaterThanNode),
         '<': (7, 'left', LessThanNode)
     }
+
+def parse_condition_to_postfix(tokens):
+    """
+    Parses a postfix expression out of the given tokens array, raising
+    a ParsingError if the tokens array starts with an invalid condition
+    """
+    condition = tokens[:isolate_condition(tokens)]
+    operators = get_operators()
 
     operator_stack = []
     output_queue = []
@@ -236,6 +245,15 @@ def parse_condition(tokens):
         if token == '(' or token == ')':
             raise errors.ParsingError('Unmatched parenthesis in output')
         output_queue.append(token)
+    return output_queue
+
+def parse_condition_to_ast(tokens):
+    """
+    Parses a condition node out of the given tokens array, raising
+    a ParsingError if the tokens array starts with an invalid condition
+    """
+    output_queue = parse_condition_to_postfix(tokens)
+    operators = get_operators()
 
     ast = []
     for token in output_queue:

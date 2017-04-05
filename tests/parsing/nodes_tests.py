@@ -103,7 +103,7 @@ class ConditionalNodeTests(unittest.TestCase):
         for test_case in test_cases:
             condition = ['(', 'A', test_case, 'B', ')']
             with self.assertRaises(errors.ParsingError):
-                nodes.parse_condition(condition)
+                nodes.parse_condition_to_ast(condition)
 
     def test_rejects_unclosed_strings(self):
         """
@@ -122,7 +122,7 @@ class ConditionalNodeTests(unittest.TestCase):
         for test_case in test_cases:
             condition = ['(', test_case, '>', 'B', ')']
             with self.assertRaises(errors.ParsingError):
-                nodes.parse_condition(condition)
+                nodes.parse_condition_to_ast(condition)
 
     def test_parses_correctly(self):
         """
@@ -137,7 +137,7 @@ class ConditionalNodeTests(unittest.TestCase):
         for test_case in test_cases:
             test_case_str = ' '.join(test_case)
             try:
-                nodes.parse_condition(test_case)
+                nodes.parse_condition_to_ast(test_case)
             except errors.ParsingError as err:
                 self.fail('Expected {} to parse correctly. Got: {}'.format(test_case_str, err.message))
 
