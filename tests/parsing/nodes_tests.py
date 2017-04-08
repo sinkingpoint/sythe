@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 import sythe.parsing.nodes as nodes
 import sythe.parsing.errors as errors
 
@@ -67,6 +68,40 @@ class ResourceNodeTests(unittest.TestCase):
             with self.assertRaises(errors.ParsingError):
                 nodes.ResourceNode([resource])
 
+class ActionNodeTests(unittest.TestCase):
+    def test_invalid_actions_fail(self):
+        test_cases = [
+            ['test', 'vimda'], #( must be after action name
+            ['test', '('], #parameter list must be terminated
+            ['test', '(', ',', ')'], #misplaced comma
+            ['test', '(', ':%&^%:', '"vimda"', ')'], #invalid parameter name
+            ['test', '(', 'vomda:', '"vimda', ')'], #unterminated string
+            ['test', '(', 'vomda:', '"vimda', ',', ')'] #superfluous comma
+        ]
+
+        for test_case in test_cases:
+            with(self.assertRaises(errors.ParsingError)):
+                nodes.ActionNode(test_case)
+
+    def test_valid_actions_parse(self):
+        test_cases = [
+            (['test', '(', ')'], 'test', {}),
+            (['test', '(', 'vimda:', '"vimda"', ')'], 'test', {'vimda': nodes.StringLiteralNode('"vimda"')}),
+            (['test', '(', 'vimda:', '"vimda"', ',', 'vomda:', '"vomda"', ')'], 'test', {'vimda': nodes.StringLiteralNode('"vimda"'), 'vomda': nodes.StringLiteralNode('"vomda"')})
+        ]
+
+        for tokens, name, params in test_cases:
+            node = nodes.ActionNode(tokens)
+            self.assertEqual(node.action_name, name)
+            self.assertEqual(node.arguments, params)
+
+    def test_action_executes(self):
+        resource = MagicMock()
+        resource.action = MagicMock()
+        node = nodes.ActionNode(['action', '(', 'vimda:', '"vimda"', ')'])
+        node.execute(resource)
+        resource.action.assert_called_once_with({'vimda': 'vimda'})
+
 class AndNodeTests(unittest.TestCase):
     def test_and_ands(self):
         test_cases = [
@@ -82,14 +117,24 @@ class AndNodeTests(unittest.TestCase):
 class OrNodeTests(unittest.TestCase):
     def test_or_ors(self):
         test_cases = [
-            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(True), True],
-            [nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(False), True],
-            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(True), True],
-            [nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(False), False]
+            (nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(True), True),
+            (nodes.BooleanLiteralNode(True), nodes.BooleanLiteralNode(False), True),
+            (nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(True), True),
+            (nodes.BooleanLiteralNode(False), nodes.BooleanLiteralNode(False), False)
         ]
 
         for left, right, output in test_cases:
             self.assertEqual(nodes.OrNode(left, right).execute(None), output)
+
+class EqualsNodeTests(unittest.TestCase):
+    def test_equals_node_equals(self):
+        test_cases = [
+            (nodes.StringLiteralNode('"vimda"'), nodes.StringLiteralNode('"vimda"'), True),
+            (nodes.StringLiteralNode('"vomda"'), nodes.StringLiteralNode('"vimda"'), False),
+        ]
+
+        for left, right, output in test_cases:
+            self.assertEqual(nodes.EqualsNode(left, right).execute(None), output)
 
 class VariableNodeTests(unittest.TestCase):
     def test_invalid_paths_returns_none(self):

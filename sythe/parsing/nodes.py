@@ -70,18 +70,21 @@ class ActionNode(Node):
         self.action_name = tokens.pop(0)
         expect('(', tokens)
         self.arguments = {}
-        while tokens[0] != ')':
-            if not regex.match(r'^[a-zA-Z0-9]+:$', tokens[0]):
-                raise errors.ParsingError(
-                    'Invalid action parameter {}'.format(tokens[0])
-                )
-            argument_name = tokens.pop(0)[:-1]
-            argument_value = parse_operand(tokens.pop(0))
-            self.arguments[argument_name] = argument_value
-            if tokens[0] != ')':
-                expect(',', tokens)
+        try:
+            while tokens[0] != ')':
+                if not regex.match(r'^[a-zA-Z0-9]+:$', tokens[0]):
+                    raise errors.ParsingError(
+                        'Invalid action parameter {}'.format(tokens[0])
+                    )
+                argument_name = tokens.pop(0)[:-1]
+                argument_value = parse_operand(tokens.pop(0))
+                self.arguments[argument_name] = argument_value
+                if tokens[0] != ')':
+                    expect(',', tokens)
 
-        expect(')', tokens)
+            expect(')', tokens)
+        except IndexError:
+            raise errors.ParsingError('Reach EOF parsing Action')
 
     def execute(self, resource):
         method = getattr(resource, self.action_name)
@@ -205,6 +208,9 @@ class StringLiteralNode(Node):
 
     def __str__(self):
         return '"{}"'.format(self.value)
+
+    def __eq__(self, other):
+        return self.value == other.value
 
 class BooleanLiteralNode(Node):
     """
