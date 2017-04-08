@@ -24,3 +24,4 @@ class Registry:
         return self.registered[key]
 
 resource_registry = Registry()
+operator_registry = Registry()

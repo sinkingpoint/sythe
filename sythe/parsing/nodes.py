@@ -1,5 +1,5 @@
 import sythe.parsing.errors as errors
-from sythe.registry import resource_registry
+from sythe.registry import resource_registry, operator_registry
 import regex
 
 class Node(object):
@@ -102,11 +102,14 @@ class ActionNode(Node):
                          for arg_name, arg_value in self.arguments.items()]
         return '{}({})'.format(self.action_name, ', '.join(arguments_str))
 
+@operator_registry.register('&')
 class AndNode(Node):
     """
     A node that forms a conjunction in a condition. Takes
     two condition components and returns True if both are True
     """
+    precedence = 12
+    associativity = 'left'
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -117,11 +120,14 @@ class AndNode(Node):
     def __str__(self):
         return '({} & {})'.format(self.left, self.right)
 
+@operator_registry.register('|')
 class OrNode(Node):
     """
     A node that forms a disjunction in a condition. Takes
     two condition components and returns True if either are True
     """
+    precedence = 13
+    associativity = '|'
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -132,11 +138,14 @@ class OrNode(Node):
     def __str__(self):
         return '({} | {})'.format(self.left, self.right)
 
+@operator_registry.register('=')
 class EqualsNode(Node):
     """
     A comparison node that takes two terminal nodes and
     returns True if they are equal
     """
+    precedence = 8
+    associativity = 'left'
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -147,11 +156,14 @@ class EqualsNode(Node):
     def __str__(self):
         return '({} = {})'.format(self.left, self.right)
 
+@operator_registry.register('>')
 class GreaterThanNode(Node):
     """
     A comparison node that takes two terminal nodes and
     returns True if the first is greater than the second
     """
+    precedence = 7
+    associativity = 'left'
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -162,11 +174,14 @@ class GreaterThanNode(Node):
     def __str__(self):
         return '({} > {})'.format(self.left, self.right)
 
+@operator_registry.register('<')
 class LessThanNode(Node):
     """
     A comparison node that takes two terminal nodes and
     returns True if the first is less than the second
     """
+    precedence = 7
+    associativity = 'left'
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -176,7 +191,6 @@ class LessThanNode(Node):
 
     def __str__(self):
         return '({} < {})'.format(self.left, self.right)
-
 
 class IntLiteralNode(Node):
     """
@@ -312,38 +326,24 @@ def isolate_condition(tokens):
 
     return end
 
-def get_operators():
-    """
-    Returns a dict of operators from token -> operator,
-    where operator = (precedence, associativity, ASTNode)
-    TODO: Move this into a registration system to make adding
-    new operators easier
-    """
-    return {
-        '&': (12, 'left', AndNode),
-        '|': (13, 'left', OrNode),
-        '=': (8, 'left', EqualsNode),
-        '>': (7, 'left', GreaterThanNode),
-        '<': (7, 'left', LessThanNode)
-    }
-
 def parse_condition_to_postfix(tokens):
     """
     Parses a postfix expression out of the given tokens array, raising
     a ParsingError if the tokens array starts with an invalid condition
     """
     condition = tokens[:isolate_condition(tokens)]
-    operators = get_operators()
 
     operator_stack = []
     output_queue = []
     while len(condition) > 0:
         token = condition.pop(0)
-        if token in operators:
-            operator1 = operators[token]
-            while operator_stack[-1] in operators and \
-                ((operator1[1] == 'left' and operator1[0] >= operators[operator_stack[-1]][0]) or \
-                 (operator1[1] == 'right' and operator1[0] > operators[operator_stack[-1]][0])):
+        if token in operator_registry:
+            operator1 = operator_registry[token]
+            while operator_stack[-1] in operator_registry and \
+                ((operator1.associativity == 'left' and \
+                  operator1.precedence >= operator_registry[operator_stack[-1]].precedence) or \
+                 (operator1.associativity == 'right' and \
+                  operator1.precedence > operator_registry[operator_stack[-1]].precedence)):
                 output_queue.append(operator_stack.pop())
             operator_stack.append(token)
         elif token == '(':
@@ -371,14 +371,13 @@ def parse_condition_to_ast(tokens):
     a ParsingError if the tokens array starts with an invalid condition
     """
     output_queue = parse_condition_to_postfix(tokens)
-    operators = get_operators()
 
     ast = []
     for token in output_queue:
-        if token in operators:
+        if token in operator_registry:
             operand1 = ast.pop()
             operand2 = ast.pop()
-            ast.append(operators[token][2](operand2, operand1))
+            ast.append(operator_registry[token](operand2, operand1))
         else:
             ast.append(parse_operand(token))
 
