@@ -2,18 +2,6 @@ import sythe.parsing.errors as errors
 from sythe.registry import resource_registry
 import regex
 
-def expect(token, tokens):
-    """
-    Raises a Parsing error if the given token is not the first
-    token in the given tokens queue. Otherwise, pops it from the
-    tokens array
-    """
-    if tokens[0] != token:
-        raise errors.ParsingError(
-            'Invalid next token. Expected {}, got {}'.format(token, tokens[0])
-        )
-    tokens.pop(0)
-
 class Node(object):
     """
     The top most node object. Basically just defines
@@ -53,6 +41,25 @@ class RuleNode(Node):
     def __str__(self):
         actions_str = ['\n\t{}'.format(str(action)) for action in self.actions]
         return '{}({}){{{}\n}}'.format(self.resource, self.condition, ''.join(actions_str))
+
+class ResourceNode(Node):
+    """
+    Defines a node which determines the type of resource
+    that a rule operates over
+    """
+    def __init__(self, tokens):
+        resource = tokens[0]
+        if resource in resource_registry:
+            self.resource_name = resource
+            tokens.pop(0)
+        else:
+            raise errors.ParsingError('Invalid resource type: {}'.format(resource))
+
+    def execute(self, resource):
+        raise NotImplementedError()
+
+    def __str__(self):
+        return self.resource_name
 
 class ActionNode(Node):
     """
@@ -166,6 +173,110 @@ class LessThanNode(Node):
 
     def __str__(self):
         return '({} < {})'.format(self.left, self.right)
+
+
+class IntLiteralNode(Node):
+    """
+    Represents an integer in a Rule which can be compared
+    etc with other values
+    """
+    def __init__(self, token):
+        try:
+            self.value = int(token)
+        except:
+            raise errors.ParsingError('Invalid int literal: {}'.format(token))
+
+    def execute(self, resource):
+        return self.value
+
+    def __str__(self):
+        return '{}'.format(self.value)
+
+class StringLiteralNode(Node):
+    """
+    Represents an string in a Rule which can be compared
+    etc with other values
+    """
+    def __init__(self, token):
+        self.value = token[1:-1]
+
+    def execute(self, resource):
+        return self.value
+
+    def __str__(self):
+        return '"{}"'.format(self.value)
+
+class BooleanLiteralNode(Node):
+    """
+    Represents an boolean in a Rule which can be compared
+    etc with other values
+    """
+    def __init__(self, token):
+        if token == 'true':
+            self.value = True
+        elif token == 'false':
+            self.value = False
+        elif isinstance(token, bool):
+            self.value = token
+        else:
+            raise errors.ParsingError('Invalid boolean literal: {}'.format(token))
+
+    def execute(self, resource):
+        return self.value
+
+    def __str__(self):
+        return '{}'.format(self.value)
+
+class NoneNode(Node):
+    """
+    Represents a None value in a Rule which can be compared
+    etc with other values
+    """
+    def execute(self, resource):
+        return None
+
+    def __str__(self):
+        return 'None'
+
+class VariableNode(Node):
+    """
+    Represents an variable in a Rule which can be compared
+    etc with other values. Variables are used to represent
+    values in a resource
+    """
+    def __init__(self, variable_name):
+        self.variable_name = variable_name
+
+    def execute(self, resource):
+        path = self.variable_name.split('.')
+        value = resource
+        for path_item in path:
+            try:
+                value = value[path_item]
+            except KeyError:
+                value = None
+                break
+
+        allowed_types = (str, int, bool, type(None))
+        if isinstance(value, allowed_types):
+            return value
+        else:
+            raise errors.ParsingError('Unknown datatype: {}'.format(type(value)))
+
+    def __str__(self):
+        return '{}'.format(self.variable_name)
+
+def expect(token, tokens):
+    """
+    Raises a Parsing error if the given token is not the first
+    token in the given tokens queue. Otherwise, pops it from the
+    tokens array
+    """
+    if tokens[0] != token:
+        raise errors.ParsingError(
+            'Invalid next token. Expected {}, got {}'.format(token, tokens[0])
+        )
+    tokens.pop(0)
 
 def isolate_condition(tokens):
     """
@@ -285,113 +396,3 @@ def parse_operand(operand_token):
         return VariableNode(operand_token)
     else:
         raise errors.ParsingError('Invalid Operand: {}'.format(operand_token))
-
-class IntLiteralNode(Node):
-    """
-    Represents an integer in a Rule which can be compared
-    etc with other values
-    """
-    def __init__(self, token):
-        try:
-            self.value = int(token)
-        except:
-            raise errors.ParsingError('Invalid int literal: {}'.format(token))
-
-    def execute(self, resource):
-        return self.value
-
-    def __str__(self):
-        return '{}'.format(self.value)
-
-class StringLiteralNode(Node):
-    """
-    Represents an string in a Rule which can be compared
-    etc with other values
-    """
-    def __init__(self, token):
-        self.value = token[1:-1]
-
-    def execute(self, resource):
-        return self.value
-
-    def __str__(self):
-        return '"{}"'.format(self.value)
-
-class BooleanLiteralNode(Node):
-    """
-    Represents an boolean in a Rule which can be compared
-    etc with other values
-    """
-    def __init__(self, token):
-        if token == 'true':
-            self.value = True
-        elif token == 'false':
-            self.value = False
-        elif isinstance(token, bool):
-            self.value = token
-        else:
-            raise errors.ParsingError('Invalid boolean literal: {}'.format(token))
-
-    def execute(self, resource):
-        return self.value
-
-    def __str__(self):
-        return '{}'.format(self.value)
-
-class NoneNode(Node):
-    """
-    Represents a None value in a Rule which can be compared
-    etc with other values
-    """
-    def execute(self, resource):
-        return None
-
-    def __str__(self):
-        return 'None'
-
-class VariableNode(Node):
-    """
-    Represents an variable in a Rule which can be compared
-    etc with other values. Variables are used to represent
-    values in a resource
-    """
-    def __init__(self, variable_name):
-        self.variable_name = variable_name
-
-    def execute(self, resource):
-        path = self.variable_name.split('.')
-        value = resource
-        for path_item in path:
-            try:
-                value = value[path_item]
-            except KeyError:
-                value = None
-                break
-
-        allowed_types = (str, int, bool, type(None))
-        if isinstance(value, allowed_types):
-            return value
-        else:
-            raise errors.ParsingError('Unknown datatype: {}'.format(type(value)))
-
-    def __str__(self):
-        return '{}'.format(self.variable_name)
-
-class ResourceNode(Node):
-    """
-    Defines a node which determines the type of resource
-    that a rule operates over
-    """
-    def __init__(self, tokens):
-        resource = tokens[0]
-        if resource in resource_registry:
-            self.resource_name = resource
-            tokens.pop(0)
-        else:
-            raise errors.ParsingError('Invalid resource type: {}'.format(resource))
-
-    def execute(self, resource):
-        raise NotImplementedError()
-
-    def __str__(self):
-        return self.resource_name
