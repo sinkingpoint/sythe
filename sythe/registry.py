@@ -17,8 +17,10 @@ class Registry:
             return klass
         return register_class
 
+    def __contains__(self, key):
+        return key in self.registered
+
     def __getitem__(self, key):
         return self.registered[key]
-
 
 resource_registry = Registry()

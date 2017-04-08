@@ -9,6 +9,7 @@ class RegistryTests(unittest.TestCase):
         class AClass:
             pass
 
+        self.assertTrue('A' in registry)
         self.assertEqual(registry['A'], AClass)
 
     def test_registry_throws_on_double_register(self):

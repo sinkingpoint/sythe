@@ -1,4 +1,5 @@
 import sythe.parsing.errors as errors
+from sythe.registry import resource_registry
 import regex
 
 def expect(token, tokens):
@@ -382,13 +383,12 @@ class ResourceNode(Node):
     that a rule operates over
     """
     def __init__(self, tokens):
-        valid_resource_types = ['ec2_instance']
         resource = tokens[0]
-        if resource in valid_resource_types:
+        if resource in resource_registry:
             self.resource_name = resource
             tokens.pop(0)
         else:
-            raise errors.ParsingError('Invalid resource type: {}'.format(tokens[0]))
+            raise errors.ParsingError('Invalid resource type: {}'.format(resource))
 
     def execute(self, resource):
         raise NotImplementedError()

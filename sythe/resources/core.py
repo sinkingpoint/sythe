@@ -26,7 +26,6 @@ def resource_action(required_args):
         return wrapper
     return enforce_args
 
-
 class Resource(object):
     """
     A Base Resource class which is the parent class of all resources that
