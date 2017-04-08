@@ -8,24 +8,29 @@ class EC2Instance(Resource):
     """
     A resource for an instance in EC2.
     """
-    def __init__(self, data):
+    def __init__(self, data, client):
         if 'Tags' in data:
             for tag in data['Tags']:
                 data['tag:{}'.format(tag['Key'])] = tag['Value']
-        Resource.__init__(self, data)
+        Resource.__init__(self, data, client)
 
     @resource_action(['key', 'value'])
     def tag(self, args):
-        ec2_client = get_ec2_client()
-        ec2_client.create_tags(
+        key = args['key']
+        value = args['value']
+        self.client.create_tags(
             Resources=[self.data['InstanceId']],
-            Tags=[{'Key': args['key'], 'Value': args['value']}]
+            Tags=[{'Key': key, 'Value': value}]
         )
+        self.data['tag:{}'.format(key)] = value
+        self.data['Tags'].append({
+            'Key': key,
+            'Value': value
+        })
 
     @resource_action([])
     def delete(self, args):
-        ec2_client = get_ec2_client()
-        ec2_client.terminate_instances(InstanceIds=[self.data['InstanceId']])
+        self.client.terminate_instances(InstanceIds=[self.data['InstanceId']])
 
 def get_ec2_instances(ec2_client=get_ec2_client()):
     """
@@ -42,4 +47,4 @@ def get_ec2_instances(ec2_client=get_ec2_client()):
         instance_from_page = [instance for reservation in instance_page['Reservations']
                               for instance in reservation['Instances']]
         instances = instances + instance_from_page
-    return [EC2Instance(instance) for instance in instances]
+    return [EC2Instance(instance, ec2_client) for instance in instances]

@@ -31,8 +31,9 @@ class Resource(object):
     A Base Resource class which is the parent class of all resources that
     we can define rules over. Defines a number of default actions.
     """
-    def __init__(self, data):
+    def __init__(self, data, client):
         self.data = data
+        self.client = client
 
     def __getitem__(self, key):
         return self.data[key]
