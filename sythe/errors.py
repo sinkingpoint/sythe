@@ -11,3 +11,10 @@ class InvalidArgumentError(Exception):
     is invalid in the context of the action
     """
     pass
+
+class RegistryCollisionError(Exception):
+    """
+    Raised when two classes try to register in a registry with
+    the same name
+    """
+    pass

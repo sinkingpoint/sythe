@@ -1,7 +1,9 @@
 from sythe.resources.core import Resource
 from sythe.resources.core import resource_action
+from sythe.registry import resource_registry
 from sythe.aws import get_ec2_client
 
+@resource_registry.register('ec2_instance')
 class EC2Instance(Resource):
     """
     A resource for an instance in EC2.
