@@ -22,7 +22,7 @@ def resource_action(required_args):
                     raise errors.MissingArgumentError(
                         'Missing argument in {} call: {}'.format(func.__name__, arg)
                     )
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
     return enforce_args
 
@@ -37,6 +37,9 @@ class Resource(object):
 
     def __getitem__(self, key):
         return self.data[key]
+
+    def __contains__(self, key):
+        return key in self.data
 
     def __eq__(self, other):
         if isinstance(other, Resource):
@@ -84,6 +87,5 @@ class Resource(object):
             })
         now = datetime.now().timestamp()
         deletion_time = float(self.data['tag:SytheDeletionTime'])
-
         if now >= deletion_time:
             self.delete(args)
